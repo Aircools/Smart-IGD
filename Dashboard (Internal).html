@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard IGD Internal</title>
+    
+    <!-- Bootstrap CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f1f5f9; /* slate-100 */
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            transition: padding-left .3s;
+        }
+        .wrapper {
+            display: flex;
+        }
+        #sidebar {
+            width: 280px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 999;
+            background: #1e293b; /* slate-800 */
+            color: #fff;
+            padding-top: 56px; /* Match navbar height */
+            transition: all .3s;
+        }
+        #main-content {
+            width: 100%;
+            padding-left: 280px; /* Default padding for when sidebar is visible */
+            transition: all .3s;
+        }
+        
+        /* Styles for Toggled Sidebar */
+        body.sidebar-toggled #sidebar {
+            left: -280px; /* Hide sidebar */
+        }
+        body.sidebar-toggled #main-content {
+            padding-left: 0; /* Expand main content */
+        }
+
+        /* Sidebar Header */
+        .sidebar-header {
+            padding: 20px;
+            background: #0f172a; /* slate-900 */
+        }
+        .sidebar-header h3 {
+            font-size: 1.2rem;
+        }
+        .sidebar-header p {
+            font-size: 0.9rem;
+            color: #94a3b8; /* slate-400 */
+        }
+        #service-list {
+            list-style: none;
+            padding: 0;
+            height: calc(100vh - 220px); /* Adjusted height for triage changer */
+            overflow-y: auto;
+        }
+        #service-list li {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #334155; /* slate-700 */
+            transition: background-color 0.2s;
+        }
+        #service-list li.completed {
+            background-color: #16a34a; /* green-600 */
+            font-weight: bold;
+        }
+        /* Card Styles */
+        .card {
+            border-width: 3px; /* Thicker border */
+            border-style: solid;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            height: 100%;
+            cursor: pointer;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07);
+            border-radius: 0.75rem; /* Rounded corners for the card */
+            overflow: hidden; /* Ensure header corners are rounded */
+        }
+        /* Triage color indicator on the border */
+        .card.triase-merah { border-color: #dc2626; }
+        .card.triase-kuning { border-color: #facc15; }
+        .card.triase-hijau { border-color: #16a34a; }
+        .card.triase-abu { border-color: #64748b; }
+        .card.status-meninggal { border-color: #1e293b; } /* Black border for deceased */
+
+
+        .card.active, .card:hover {
+            transform: translateY(-3px);
+            border-color: #3b82f6;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        .card.status-siap-pulang {
+            border-color: #0dcaf0;
+            box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.3);
+        }
+        .card-body {
+            padding: 0.75rem;
+        }
+        .card-header { 
+            font-weight: 600; 
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            padding: 0.5rem 0.75rem;
+            text-align: center;
+            border-bottom: 2px solid; /* Match border style */
+        }
+        .card-header.status-merah { background-color: #dc2626; color: white; border-color: #b91c1c;}
+        .card-header.status-kuning { background-color: #facc15; color: #422006; border-color: #ca8a04;}
+        .card-header.status-hijau { background-color: #16a34a; color: white; border-color: #15803d;}
+        .card-header.status-abu { background-color: #64748b; color: white; border-color: #475569;}
+        .card-header.status-meninggal { background-color: #1e293b; color: white; border-color: #0f172a;}
+        
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .card-subtitle {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+        .progress-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 0.5rem;
+        }
+        .proses-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background-color: #e2e8f0;
+            color: #334155;
+            border-radius: 50%;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        /* Baku Mutu Colors */
+        .proses-icon.baku-mutu-sesuai { background-color: #16a34a; color: white; }
+        .proses-icon.baku-mutu-mendekati { background-color: #facc15; color: #422006; }
+        .proses-icon.baku-mutu-tidak-sesuai { background-color: #dc2626; color: white; }
+        
+        .proses-icon.final-meninggal {
+            background-color: #1e293b;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <h3 id="sidebar-patient-name">Detail Pelayanan</h3>
+                <p id="sidebar-subtitle">Klik kartu pasien untuk melihat detail</p>
+                <!-- New Triage Change Dropdown -->
+                <div class="mt-3" id="triage-changer-container" style="display: none;">
+                    <label class="form-label small text-white-50">Ubah Kategori Triase</label>
+                    <div class="dropdown">
+                        <button class="btn btn-secondary btn-sm dropdown-toggle w-100" type="button" id="triage-dropdown-btn" data-bs-toggle="dropdown" aria-expanded="false">
+                            Pilih Triase
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark w-100" aria-labelledby="triage-dropdown-btn">
+                            <li><a class="dropdown-item" href="#" data-triage="Merah"><i class="bi bi-circle-fill text-danger me-2"></i>Merah</a></li>
+                            <li><a class="dropdown-item" href="#" data-triage="Kuning"><i class="bi bi-circle-fill text-warning me-2"></i>Kuning</a></li>
+                            <li><a class="dropdown-item" href="#" data-triage="Hijau"><i class="bi bi-circle-fill text-success me-2"></i>Hijau</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <ul id="service-list">
+                <!-- Service list will be populated by JS -->
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <div id="main-content">
+            <nav class="navbar navbar-dark" style="background-color: #0f172a;">
+                <div class="container-fluid">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-dark me-3" type="button" id="sidebar-toggle">
+                            <i class="bi bi-list"></i>
+                        </button>
+                        <a class="navbar-brand" href="#">
+                            <i class="bi bi-hospital-fill me-2"></i>
+                            Dashboard IGD Internal
+                        </a>
+                    </div>
+                    <div id="clock" class="text-white small"></div>
+                </div>
+            </nav>
+
+            <main class="container-fluid mt-4">
+                <div id="patient-cards-container" class="row g-3">
+                    <!-- Patient cards will be dynamically inserted here -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // --- DATA & KONFIGURASI ---
+        const prosesInfo = {
+            "Pendaftaran": { icon: "bi-clipboard-plus-fill" },
+            "Triase Awal": { icon: "bi-person-check-fill" },
+            "Pengkajian Dokter": { icon: "bi-file-earmark-medical-fill" },
+            "Resusitasi": { icon: "bi-heart-pulse-fill" },
+            "Pemberian Infus": { icon: "bi-droplet-fill" },
+            "Rontgen": { icon: "bi-radioactive" },
+            "Lab Darah": { icon: "bi-eyedropper" },
+            "Konsul Spesialis": { icon: "bi-people-fill" },
+            "Observasi Selesai": { icon: "bi-check-circle-fill" },
+            "Selesai IGD": { icon: "bi-box-arrow-right" }
+        };
+        const semuaProses = Object.keys(prosesInfo);
+
+        const bakuMutu = {
+            'Pendaftaran': { limit: 5 },
+            'Triase Awal': { limit: 5 },
+            'Pengkajian Dokter': { 'Merah': 25, 'Kuning': 30, 'Hijau': 60 },
+            'Lab Darah': { 'Merah': 90, 'Kuning': 120, 'Hijau': 120 },
+            'Rontgen': { 'Merah': 90, 'Kuning': 120, 'Hijau': 120 },
+            'Konsul Spesialis': { 'Merah': 30, 'Kuning': 60, 'Hijau': 60 }
+        };
+
+        let dataPasien = [
+            { id: 1, no_rm: "01-23-45", nama: "Budi Santoso", umur: 45, kelamin: "L", penjamin: "BPJS", waktuMasuk: new Date(new Date().getTime() - 60 * 60000), triase: "Merah", status: "Resusitasi Aktif", proses: ["Pendaftaran", "Triase Awal", "Resusitasi", "Pemberian Infus"], waktuProses: {}, lokasi: { warna: "Kuning", bed: "01" }, dokter: "Dr. Jaga", isDeceased: false },
+            { id: 2, no_rm: "02-34-56", nama: "Citra Lestari", umur: 28, kelamin: "P", penjamin: "Asuransi", waktuMasuk: new Date(new Date().getTime() - 55 * 60000), triase: "Kuning", status: "Observasi IGD", proses: ["Pendaftaran", "Triase Awal", "Pengkajian Dokter", "Lab Darah"], waktuProses: {}, lokasi: { warna: "Kuning", bed: "01" }, dokter: "Dr. Jaga", isDeceased: false },
+            { id: 3, no_rm: "03-45-67", nama: "Agus Wijaya", umur: 60, kelamin: "L", penjamin: "Umum", waktuMasuk: new Date(new Date().getTime() - 50 * 60000), triase: null, status: "Menunggu Triase", proses: ["Pendaftaran"], waktuProses: {}, lokasi: { warna: "Hijau", bed: "01" }, dokter: "Dr. Jaga", isDeceased: false }
+        ];
+        
+        let selectedPatientId = null;
+
+        // --- FUNGSI-FUNGSI ---
+        function getBakuMutuClass(prosesName, patient, isOngoing = false) {
+            const warningThreshold = 0.8;
+            const standard = bakuMutu[prosesName];
+            if (!standard) return isOngoing ? '' : 'baku-mutu-sesuai';
+
+            let limit;
+            if (typeof standard.limit === 'number') {
+                limit = standard.limit;
+            } else if (patient.triase && typeof standard[patient.triase] === 'number') {
+                limit = standard[patient.triase];
+            } else {
+                return isOngoing ? '' : 'baku-mutu-sesuai';
+            }
+
+            let startTime;
+            const prosesIndex = semuaProses.indexOf(prosesName);
+            const prevProsesName = semuaProses[prosesIndex - 1];
+            
+            if (prosesIndex === 0) {
+                startTime = patient.waktuMasuk;
+            } else {
+                startTime = patient.waktuProses[prevProsesName] || patient.waktuMasuk;
+            }
+
+            const endTime = isOngoing ? new Date() : patient.waktuProses[prosesName];
+            if (!endTime) return '';
+
+            const durationMinutes = (endTime - startTime) / (1000 * 60);
+
+            if (durationMinutes > limit) {
+                return 'baku-mutu-tidak-sesuai'; // Red
+            }
+            
+            if (isOngoing) {
+                if (durationMinutes > limit * warningThreshold) {
+                    return 'baku-mutu-mendekati'; // Yellow for ongoing
+                }
+            }
+            
+            // If completed within limit, it's always green
+            return isOngoing ? '' : 'baku-mutu-sesuai'; // Green for completed
+        }
+
+
+        function tampilkanPasien() {
+            const cardsContainer = document.getElementById('patient-cards-container');
+            cardsContainer.innerHTML = '';
+
+            const triaseOrder = { "Merah": 1, "Kuning": 2, "Hijau": 3 };
+            dataPasien.sort((a, b) => {
+                if (a.isDeceased !== b.isDeceased) return a.isDeceased ? -1 : 1;
+                const aHasTriase = a.triase !== null;
+                const bHasTriase = b.triase !== null;
+                if (aHasTriase !== bHasTriase) return aHasTriase ? 1 : -1;
+                return triaseOrder[a.triase] - triaseOrder[b.triase] || a.waktuMasuk - b.waktuMasuk;
+            });
+
+            dataPasien.forEach((pasien) => {
+                let headerStatusClass = 'status-abu';
+                let cardTriaseClass = 'triase-abu';
+
+                if(pasien.isDeceased) {
+                    headerStatusClass = 'status-meninggal';
+                    cardTriaseClass = 'status-meninggal';
+                } else if (pasien.proses.includes("Triase Awal") && pasien.triase) {
+                    headerStatusClass = `status-${pasien.triase.toLowerCase()}`;
+                    cardTriaseClass = `triase-${pasien.triase.toLowerCase()}`;
+                }
+
+                const waktu = pasien.waktuMasuk.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const jenisKelaminLengkap = pasien.kelamin === 'L' ? 'Laki - Laki' : 'Perempuan';
+                
+                const currentProsesIndex = pasien.proses.length;
+                const currentProsesName = semuaProses[currentProsesIndex];
+
+                const prosesIconsHTML = semuaProses.map(p => {
+                    const iconClass = prosesInfo[p].icon || 'bi-question-circle-fill';
+                    let finalClass = '';
+
+                    if (pasien.isDeceased && p === "Selesai IGD") {
+                        finalClass = 'final-meninggal';
+                    } else if (pasien.proses.includes(p)) {
+                        finalClass = getBakuMutuClass(p, pasien, false); // Completed
+                    } else if (p === currentProsesName && !pasien.isDeceased) {
+                        finalClass = getBakuMutuClass(p, pasien, true); // Ongoing
+                    }
+
+                    return `<div class="proses-icon ${finalClass}" title="${p}" data-bs-toggle="tooltip" data-bs-placement="top"><i class="bi ${iconClass}"></i></div>`;
+                }).join('');
+                
+                const isSiapPulang = pasien.status === "Siap Pulang";
+                const cardCol = document.createElement('div');
+                cardCol.className = 'col-xl-2 col-lg-3 col-md-4 col-sm-6 col-12';
+                cardCol.innerHTML = `
+                    <div class="card ${cardTriaseClass} ${isSiapPulang ? 'status-siap-pulang' : ''}" data-patient-id="${pasien.id}">
+                        <div class="card-header ${headerStatusClass}">${pasien.status}</div>
+                        <div class="card-body">
+                            <h5 class="card-title text-truncate">${pasien.nama}</h5>
+                            <h6 class="card-subtitle text-muted">RM: ${pasien.no_rm}</h6>
+                            <div class="d-flex flex-column gap-1">
+                                <div class="info-item"><i class="bi bi-person-badge"></i><span>Umur: <strong>${pasien.umur} th / ${jenisKelaminLengkap}</strong></span></div>
+                                <div class="info-item"><i class="bi bi-shield-check"></i><span>Penjamin: <strong>${pasien.penjamin}</strong></span></div>
+                                <div class="info-item"><i class="bi bi-clock-fill"></i><span>Masuk: <strong>${waktu}</strong></span></div>
+                                <div class="info-item"><i class="bi bi-geo-alt-fill"></i><span>Lokasi: <strong>Bed ${pasien.lokasi.warna} - ${pasien.lokasi.bed}</strong></span></div>
+                                <div class="info-item"><i class="bi bi-person-fill"></i><span>Dokter Pemeriksa: <strong>${pasien.dokter}</strong></span></div>
+                            </div>
+                            <div class="mt-2">
+                                <h6 class="fw-bold small mb-2" style="font-size:0.8rem;">Progres:</h6>
+                                <div class="progress-container">${prosesIconsHTML}</div>
+                            </div>
+                        </div>
+                    </div>`;
+                cardsContainer.appendChild(cardCol);
+            });
+            
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            document.querySelectorAll('.card').forEach(card => {
+                if(parseInt(card.dataset.patientId) === selectedPatientId) {
+                    card.classList.add('active');
+                }
+                card.addEventListener('click', (e) => {
+                    const patientId = parseInt(e.currentTarget.dataset.patientId);
+                    updateSidebar(patientId);
+                    
+                    document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                });
+            });
+        }
+
+        function populateSidebarServices() {
+            const serviceList = document.getElementById('service-list');
+            serviceList.innerHTML = '';
+            semuaProses.forEach(proses => {
+                const iconClass = prosesInfo[proses].icon || 'bi-question-circle-fill';
+                const li = document.createElement('li');
+                li.dataset.service = proses;
+                li.innerHTML = `<i class="bi ${iconClass} fs-5"></i><span>${proses}</span>`;
+                serviceList.appendChild(li);
+            });
+        }
+
+        function updateSidebar(patientId) {
+            selectedPatientId = patientId;
+            const triageChanger = document.getElementById('triage-changer-container');
+            const patient = dataPasien.find(p => p.id === patientId);
+
+            if (!patient || patient.isDeceased) {
+                document.getElementById('sidebar-patient-name').textContent = patient ? patient.nama : 'Detail Pelayanan';
+                document.getElementById('sidebar-subtitle').textContent = patient ? `RM: ${patient.no_rm} | Status: Selesai IGD` : 'Klik kartu pasien untuk melihat detail';
+                triageChanger.style.display = 'none';
+                if (!patient) selectedPatientId = null;
+                return;
+            }
+
+            triageChanger.style.display = 'block';
+            if (patient.triase) {
+                document.getElementById('triage-dropdown-btn').textContent = `Triase Saat Ini: ${patient.triase}`;
+            } else {
+                document.getElementById('triage-dropdown-btn').textContent = 'Tentukan Triase';
+            }
+
+            document.getElementById('sidebar-patient-name').textContent = patient.nama;
+            document.getElementById('sidebar-subtitle').textContent = `RM: ${patient.no_rm} | Status: ${patient.status}`;
+
+            document.querySelectorAll('#service-list li').forEach(li => {
+                li.classList.toggle('completed', patient.proses.includes(li.dataset.service));
+            });
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }) + ' | ' + 
+                               now.toLocaleTimeString('id-ID');
+            document.getElementById('clock').textContent = timeString;
+        }
+
+        function simulasiUpdate() {
+            setInterval(() => {
+                if (dataPasien.length === 0) return;
+                const pasienToUpdate = dataPasien.find(p => !p.isDeceased);
+                if (!pasienToUpdate) return;
+                
+                const prosesSudahDilalui = pasienToUpdate.proses.length;
+                const belumSelesai = !pasienToUpdate.proses.includes("Selesai IGD");
+
+                if (belumSelesai && prosesSudahDilalui < semuaProses.length) {
+                    let prosesBerikutnya = null;
+                    for(const proses of semuaProses) {
+                        if(!pasienToUpdate.proses.includes(proses)) {
+                            prosesBerikutnya = proses;
+                            break;
+                        }
+                    }
+
+                    if (prosesBerikutnya) {
+                         pasienToUpdate.proses.push(prosesBerikutnya);
+                         pasienToUpdate.waktuProses[prosesBerikutnya] = new Date(); // Record completion time
+                    }
+                    
+                    if (prosesBerikutnya === "Triase Awal") {
+                        pasienToUpdate.status = "Menunggu Pemeriksaan";
+                        if (!pasienToUpdate.triase) {
+                            pasienToUpdate.triase = ["Merah", "Kuning", "Hijau"][Math.floor(Math.random() * 3)];
+                        }
+                    }
+                    if (prosesBerikutnya === "Pengkajian Dokter") pasienToUpdate.status = "Observasi IGD";
+                    
+                    if (prosesBerikutnya === "Observasi Selesai") {
+                         const outcome = Math.random();
+                         if (outcome < 0.1) {
+                            pasienToUpdate.status = "Selesai IGD";
+                            pasienToUpdate.isDeceased = true;
+                            pasienToUpdate.proses.push("Selesai IGD");
+                            pasienToUpdate.waktuProses["Selesai IGD"] = new Date();
+                         } else if (outcome < 0.6) {
+                           pasienToUpdate.status = "Siap Pulang";
+                        } else {
+                           pasienToUpdate.status = "Menunggu Rawat Inap";
+                        }
+                    }
+
+                    if (pasienToUpdate.proses.includes("Selesai IGD") && !pasienToUpdate.isDeceased) {
+                         setTimeout(() => {
+                            dataPasien = dataPasien.filter(p => p.id !== pasienToUpdate.id);
+                            tampilkanPasien();
+                        }, 2000);
+                    }
+                     if (pasienToUpdate.isDeceased) {
+                         setTimeout(() => {
+                            dataPasien = dataPasien.filter(p => p.id !== pasienToUpdate.id);
+                            tampilkanPasien();
+                        }, 30000);
+                    }
+                    tampilkanPasien();
+                }
+            }, 10000);
+
+            setInterval(() => {
+                if(dataPasien.length >= 24) return;
+                const namaBaruList = ["Rina Marlina", "Joko Susilo", "Siti Aminah", "Linda Wati", "Bambang Yudhoyono"];
+                const namaBaru = namaBaruList[Math.floor(Math.random() * namaBaruList.length)];
+                const newId = (dataPasien.length > 0) ? Math.max(0, ...dataPasien.map(p => p.id)) + 1 : 1;
+                const waktuMasuk = new Date();
+                dataPasien.push({
+                    id: newId,
+                    no_rm: `1${newId.toString().padStart(2, '0')}-${Math.floor(10 + Math.random() * 90)}-${Math.floor(10 + Math.random() * 90)}`,
+                    nama: namaBaru,
+                    umur: Math.floor(Math.random() * 60) + 18,
+                    kelamin: Math.random() > 0.5 ? 'L' : 'P',
+                    penjamin: ["BPJS", "Asuransi", "Umum"][Math.floor(Math.random() * 3)],
+                    waktuMasuk: waktuMasuk,
+                    triase: null,
+                    status: "Menunggu Triase",
+                    proses: ["Pendaftaran"],
+                    waktuProses: { "Pendaftaran": new Date(waktuMasuk.getTime() + (Math.random() * 4 * 60000)) },
+                    lokasi: { warna: ["Merah", "Kuning", "Hijau"][Math.floor(Math.random() * 3)], bed: `0${Math.floor(Math.random() * 5) + 1}`},
+                    dokter: "Dr. Jaga",
+                    isDeceased: false
+                });
+                tampilkanPasien();
+            }, 20000);
+        }
+
+        // --- INISIALISASI ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize timestamps for existing data
+            dataPasien.forEach(p => {
+                let lastTimestamp = p.waktuMasuk;
+                p.proses.forEach(proc => {
+                    lastTimestamp = new Date(lastTimestamp.getTime() + ((Math.random() * 10) + 2) * 60000);
+                    p.waktuProses[proc] = lastTimestamp;
+                });
+            });
+
+            tampilkanPasien();
+            populateSidebarServices();
+            updateClock();
+            setInterval(updateClock, 1000);
+            simulasiUpdate();
+            setInterval(tampilkanPasien, 5000); // Real-time UI update for baku mutu
+
+            document.getElementById('sidebar-toggle').addEventListener('click', () => {
+                document.body.classList.toggle('sidebar-toggled');
+            });
+
+            document.querySelectorAll('#triage-changer-container .dropdown-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (selectedPatientId === null) return;
+
+                    const newTriage = e.currentTarget.dataset.triage;
+                    const patient = dataPasien.find(p => p.id === selectedPatientId);
+
+                    if (patient) {
+                        patient.triase = newTriage;
+                        if (!patient.proses.includes("Triase Awal")) {
+                            patient.proses.push("Triase Awal");
+                            patient.waktuProses["Triase Awal"] = new Date();
+                            patient.status = "Menunggu Pemeriksaan";
+                        }
+                        tampilkanPasien();
+                        updateSidebar(selectedPatientId);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

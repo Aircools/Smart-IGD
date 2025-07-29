@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Ketersediaan IGD</title>
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat Font Awesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Memuat Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Menggunakan font Inter sebagai default */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Transisi warna untuk ikon agar lebih halus */
+        .icon-status {
+            transition: color 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <main class="w-full max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800">Dashboard Ketersediaan IGD</h1>
+            <p class="text-gray-500 mt-2">Informasi real-time kapasitas ruang Instalasi Gawat Darurat</p>
+        </header>
+
+        <!-- Kartu Waktu -->
+        <div class="bg-white rounded-xl shadow-lg p-4 mb-8">
+            <div class="flex justify-center items-center">
+                <p id="datetime" class="text-lg font-semibold text-gray-800">Memuat waktu...</p>
+            </div>
+        </div>
+
+        <!-- Kontainer untuk 2 kartu status -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            
+            <!-- Kartu Zona Merah dengan bingkai tebal -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col border-4 border-gray-400">
+                <div class="bg-red-600 text-white p-4 flex items-center justify-between">
+                    <h2 class="font-bold text-lg">ZONA MERAH</h2>
+                    <i class="fas fa-heart-pulse text-2xl"></i>
+                </div>
+                <div class="grid grid-cols-2 flex-grow">
+                    <div class="p-6 text-center border-r-2 border-gray-300">
+                        <p id="merah-total" class="text-5xl font-bold text-gray-700">0</p>
+                        <p class="text-sm font-semibold text-gray-500 uppercase mt-2">TOTAL</p>
+                    </div>
+                    <div class="p-6 text-center">
+                        <p id="merah-terisi" class="text-5xl font-bold text-red-600">0</p>
+                        <p class="text-sm font-semibold text-gray-500 uppercase mt-2">TERISI</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kartu Zona Kuning dengan bingkai tebal -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col border-4 border-gray-400">
+                <div class="bg-yellow-500 text-white p-4 flex items-center justify-between">
+                    <h2 class="font-bold text-lg">ZONA KUNING</h2>
+                    <i class="fas fa-triangle-exclamation text-2xl"></i>
+                </div>
+                <div class="grid grid-cols-2 flex-grow">
+                    <div class="p-6 text-center border-r-2 border-gray-300">
+                        <p id="kuning-total" class="text-5xl font-bold text-gray-700">0</p>
+                        <p class="text-sm font-semibold text-gray-500 uppercase mt-2">TOTAL</p>
+                    </div>
+                    <div class="p-6 text-center">
+                        <p id="kuning-terisi" class="text-5xl font-bold text-yellow-500">0</p>
+                        <p class="text-sm font-semibold text-gray-500 uppercase mt-2">TERISI</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Kartu Ketersediaan Alat -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Ketersediaan Alat Bantu</h3>
+            
+            <div class="flex flex-col sm:flex-row sm:items-center mb-6">
+                <div class="w-full sm:w-48 mb-2 sm:mb-0">
+                    <span id="wheelchair-label" class="text-lg font-semibold text-gray-700">Kursi Roda</span>
+                </div>
+                <div id="wheelchair-container" class="flex flex-wrap gap-4"></div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center">
+                <div class="w-full sm:w-48 mb-2 sm:mb-0">
+                    <span id="stretcher-label" class="text-lg font-semibold text-gray-700">Velbed</span>
+                </div>
+                <div id="stretcher-container" class="flex flex-wrap gap-4"></div>
+            </div>
+             <p class="text-xs text-gray-400 mt-6 text-center">
+                *Klik pada ikon untuk mengubah status (simulasi). Biru: Kosong, Abu-abu: Terisi.
+            </p>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- SUMBER DATA UTAMA (Bisa diganti dengan data dari API) ---
+            const zoneData = {
+                merah: { terisi: 3, kosong: 1 },
+                kuning: { terisi: 5, kosong: 3 }
+            };
+            const initialWheelchairs = [
+                { status: 'kosong' }, { status: 'kosong' }, { status: 'terisi' }, 
+                { status: 'kosong' }, { status: 'terisi' }
+            ];
+            const initialStretchers = [
+                { status: 'terisi' }, { status: 'terisi' }, { status: 'kosong' }, 
+                { status: 'kosong' }, { status: 'kosong' }, { status: 'terisi' },
+                { status: 'kosong' }
+            ];
+
+            // --- ELEMEN DOM ---
+            const datetimeElement = document.getElementById('datetime');
+            const wheelchairContainer = document.getElementById('wheelchair-container');
+            const stretcherContainer = document.getElementById('stretcher-container');
+            const wheelchairLabel = document.getElementById('wheelchair-label');
+            const stretcherLabel = document.getElementById('stretcher-label');
+            
+            // --- FUNGSI-FUNGSI ---
+
+            // Fungsi untuk memperbarui tanggal dan jam setiap detik
+            function updateDateTime() {
+                const now = new Date();
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+                datetimeElement.textContent = now.toLocaleDateString('id-ID', options).replace(/\./g, ':');
+            }
+
+            // Fungsi untuk mengisi data kartu zona
+            function renderZoneCards() {
+                for (const zone in zoneData) {
+                    if (document.getElementById(`${zone}-terisi`)) {
+                        const total = zoneData[zone].terisi + zoneData[zone].kosong;
+                        document.getElementById(`${zone}-total`).textContent = total;
+                        document.getElementById(`${zone}-terisi`).textContent = zoneData[zone].terisi;
+                    }
+                }
+            }
+            
+            // Fungsi untuk memperbarui label alat bantu dengan jumlah total
+            function updateToolLabels() {
+                wheelchairLabel.textContent = `(${initialWheelchairs.length}) Kursi Roda`;
+                stretcherLabel.textContent = `(${initialStretchers.length}) Velbed`;
+            }
+
+            // Fungsi untuk merender ikon alat bantu (kursi roda, velbed)
+            function renderIcons(container, items, iconClass) {
+                const colorAvailable = 'text-blue-500';
+                const colorOccupied = 'text-gray-400';
+                container.innerHTML = ''; 
+                items.forEach((item, index) => {
+                    const iconElement = document.createElement('i');
+                    iconElement.className = `fas ${iconClass} text-4xl cursor-pointer icon-status`;
+                    iconElement.dataset.index = index;
+                    iconElement.classList.add(item.status === 'kosong' ? colorAvailable : colorOccupied);
+
+                    iconElement.addEventListener('click', () => {
+                        items[index].status = items[index].status === 'kosong' ? 'terisi' : 'kosong';
+                        renderIcons(container, items, iconClass);
+                    });
+
+                    container.appendChild(iconElement);
+                });
+            }
+
+            // --- INISIALISASI SAAT HALAMAN DIMUAT ---
+            renderZoneCards();
+            updateToolLabels();
+            renderIcons(wheelchairContainer, initialWheelchairs, 'fa-wheelchair');
+            renderIcons(stretcherContainer, initialStretchers, 'fa-bed-pulse');
+            
+            updateDateTime(); // Panggil sekali agar tidak ada jeda
+            setInterval(updateDateTime, 1000); // Perbarui setiap detik
+        });
+    </script>
+
+</body>
+</html>
